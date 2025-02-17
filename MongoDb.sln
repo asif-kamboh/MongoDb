@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDb.Example", "MongoDb.Example\MongoDb.Example.csproj", "{F1C01BFF-29EA-4677-AAD4-5AA0382D5B16}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDb.Tests", "MongoDb.Tests\MongoDb.Tests.csproj", "{A9A7780E-2AA0-4879-AF1D-6BD9E9BA4473}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScientificBit.MongoDb", "ScientificBit.MongoDb\ScientificBit.MongoDb.csproj", "{179582F3-94E3-4139-8A42-B9EF016D833F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F1C01BFF-29EA-4677-AAD4-5AA0382D5B16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1C01BFF-29EA-4677-AAD4-5AA0382D5B16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1C01BFF-29EA-4677-AAD4-5AA0382D5B16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1C01BFF-29EA-4677-AAD4-5AA0382D5B16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9A7780E-2AA0-4879-AF1D-6BD9E9BA4473}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9A7780E-2AA0-4879-AF1D-6BD9E9BA4473}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9A7780E-2AA0-4879-AF1D-6BD9E9BA4473}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9A7780E-2AA0-4879-AF1D-6BD9E9BA4473}.Release|Any CPU.Build.0 = Release|Any CPU
+		{179582F3-94E3-4139-8A42-B9EF016D833F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{179582F3-94E3-4139-8A42-B9EF016D833F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{179582F3-94E3-4139-8A42-B9EF016D833F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{179582F3-94E3-4139-8A42-B9EF016D833F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

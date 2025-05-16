@@ -22,7 +22,7 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     Task<TEntity?> GetAsync(string documentId);
 
     /// <summary>
-    /// Find one document with given sort key or default sort key, i-e `_id`
+    /// Find one document with a given sort key or default sort key, i-e `_id`
     /// </summary>
     /// <param name="expr"></param>
     /// <param name="orderBy"></param>
@@ -30,7 +30,7 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, string? orderBy = null);
 
     /// <summary>
-    /// Find one document with given sort definition
+    /// Find one document with a given sort definition
     /// </summary>
     /// <param name="expr"></param>
     /// <param name="sort"></param>
@@ -38,7 +38,7 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, SortDefinition<TEntity> sort);
 
     /// <summary>
-    /// Find one document with given sort key or default sort key, i-e `_id`
+    /// Find one document with a given sort key or default sort key, i-e `_id`
     /// </summary>
     /// <param name="filter"></param>
     /// <param name="orderBy"></param>
@@ -46,7 +46,7 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, string? orderBy = null);
 
     /// <summary>
-    /// Find one document with given sort definition
+    /// Find one document with a given sort definition
     /// </summary>
     /// <param name="filter"></param>
     /// <param name="sort"></param>

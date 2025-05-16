@@ -4,7 +4,7 @@ Developers can easily define CRUD operations on a Collection by just
 deriving their collection-wise repository classes from `BaseRepository` class.
 
 ## How to Integrate
-The package is built for .NET Core 7 and supports MongoDB v6+. 
+The package is built for .NET 8, 9 and supports MongoDB v6+. 
 
 ### Configure Database
 The package defines `IServiceCollection` extension to easily setup MongoDB.
@@ -137,11 +137,10 @@ Please review code documentation to know more about CRUD operations.
 Please refer code and inline docs
 
 ## Contribution
-Contribution guidelines will be added shortly
+Contribution guidelines will be added shortly.
 
 ## Support The Developer
 Please support me to help cover ongoing development, infrastructure costs, and the potential expansion of the project (including new features, testing, and documentation).
-<br/>
 
-Please contact asif@scientificbit.com for donations.
- 
+## Contact
+Please contact asif@scientificbit.com for any information.

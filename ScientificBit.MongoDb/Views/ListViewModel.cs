@@ -22,9 +22,9 @@ public interface IListViewModel<TDocument>
 	int Limit { get; }
 
 	/// <summary>
-	/// Currently not used
+	/// Whether there are more documents available
 	/// </summary>
-	int Total { get; }
+	bool HasNextPage { get; }
 }
 
 /// <summary>
@@ -45,16 +45,12 @@ public class ListViewModel<TDocument> : IListViewModel<TDocument>
 	{
 	}
 
-	public ListViewModel(IList<TDocument>? documents, int offset, int limit) : this(documents, offset, limit, documents?.Count ?? 0)
-	{
-	}
-
-	public ListViewModel(IList<TDocument>? documents, int offset, int limit, int total)
+	public ListViewModel(IList<TDocument>? documents, int offset, int limit, bool hasNextPage = false)
 	{
 		Documents = documents?.ToList() ?? new List<TDocument>();
 		Offset = offset;
 		Limit = limit;
-		Total = total;
+		HasNextPage = hasNextPage;
 	}
 
     public IList<TDocument> Documents { get; set; }
@@ -63,5 +59,5 @@ public class ListViewModel<TDocument> : IListViewModel<TDocument>
 
 	public int Limit { get; set; }
 
-	public int Total { get; set; }
+	public bool HasNextPage { get; set; }
 }

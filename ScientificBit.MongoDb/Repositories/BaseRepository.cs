@@ -70,13 +70,13 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
     public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, string? orderBy = null)
     {
         var result = await FindAsyncImpl(filter, 0, 1, orderBy);
-        return result.FirstOrDefault();
+        return result.Documents.FirstOrDefault();
     }
 
     public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, SortDefinition<TEntity> sort)
     {
         var result = await FindAsyncImpl(filter, 0, 1, sort);
-        return result.FirstOrDefault();
+        return result.Documents.FirstOrDefault();
     }
 
     public Task<long> CountDocumentsAsync(Expression<Func<TEntity, bool>> expr)
@@ -119,8 +119,7 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         var pageSize = limit ?? DefaultLimit;
         if(pageSize == -1) pageSize = int.MaxValue; // Removes the limit if -1 is passed
         var pageOffset = offset ?? 0;
-        var documents = await FindAsyncImpl(filter, pageOffset, pageSize, orderBy);
-        return new ListViewModel<TEntity>(documents, pageOffset, pageSize, documents.Count);
+        return await FindAsyncImpl(filter, pageOffset, pageSize, orderBy);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, int? offset, int? limit, SortDefinition<TEntity> sort)
@@ -128,8 +127,26 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         var pageSize = limit ?? DefaultLimit;
         if(pageSize == -1) pageSize = int.MaxValue; // Removes the limit if -1 is passed
         var pageOffset = offset ?? 0;
-        var documents = await FindAsyncImpl(filter, pageOffset, pageSize, sort);
-        return new ListViewModel<TEntity>(documents, pageOffset, pageSize, documents.Count);
+        return await FindAsyncImpl(filter, pageOffset, pageSize, sort);
+    }
+
+    public async Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters,
+        FindOptions<TEntity> options)
+    {
+        // Exclude deleted docs
+        filters.Add(FiltersBuilder<TEntity>.GetDeleteAtFilter());
+        return await FindAsync(FiltersBuilder<TEntity>.And(filters), options);
+    }
+
+    public async Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr,
+        FindOptions<TEntity> options)
+    {
+        return await FindAsync((FilterDefinition<TEntity>) expr, options);
+    }
+
+    public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, FindOptions<TEntity> options)
+    {
+        return await FindAsyncImpl(filter, options);
     }
 
     public Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(string documentId, TUpdateModel payload,
@@ -173,6 +190,12 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         await Collection.InsertManyAsync(documents);
     }
 
+    public virtual Task<DbResult> UpdateAsync<TUpdateModel>(TUpdateModel payload) where TUpdateModel : IUpdateModel
+    {
+        AssertObjectId(payload.Id);
+        return UpdateAsync(payload.Id!, payload);
+    }
+
     public virtual Task<DbResult> UpdateAsync<TUpdateModel>(string documentId, TUpdateModel payload)
         where TUpdateModel : IUpdateModel
     {
@@ -184,6 +207,29 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         bool updateMany) where TUpdateModel : IUpdateModel
     {
         return UpdateAsync((FilterDefinition<TEntity>) expr, payload, updateMany);
+    }
+
+    public virtual async Task<BulkWriteResult<TEntity>> BulkUpdateAsync<TUpdateModel>(IList<TUpdateModel> updates)
+        where TUpdateModel : IUpdateModel
+    {
+        var bulkOps = new List<WriteModel<TEntity>>();
+
+        if (!updates.Any())
+        {
+            return new BulkWriteResult<TEntity>.Acknowledged(0, 0L, 0L, 0L, 0L, bulkOps, new List<BulkWriteUpsert>());
+        }
+
+        foreach (var update in updates)
+        {
+            AssertObjectId(update.Id);
+
+            var filter = Builders<TEntity>.Filter.Eq(p => p.Id, update.Id);
+            var updateDef = GenerateUpdateDefinition(update);
+            bulkOps.Add(new UpdateOneModel<TEntity>(filter, updateDef));
+        }
+
+        var result = await Collection.BulkWriteAsync(bulkOps);
+        return result;
     }
 
     public Task<TEntity?> FindOneAndDeleteAsync(string documentId, bool permanent = false)
@@ -400,7 +446,7 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         if (!ObjectId.TryParse(id ?? string.Empty, out var _))
         {
             if (string.IsNullOrEmpty(id)) throw new ArgumentException("Invalid document ID");
-            throw new ArgumentException($"Invalid document ID format.Id={id}");
+            throw new ArgumentException($"Invalid document ID format. Id={id}");
         }
     }
 
@@ -408,27 +454,55 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
 
     #region Private methods
 
-    private Task<IList<TEntity>> FindAsyncImpl(FilterDefinition<TEntity> filter, int offset, int limit, string? orderBy)
+    private Task<IListViewModel<TEntity>> FindAsyncImpl(FilterDefinition<TEntity> filter, int offset, int limit, string? orderBy)
     {
         var sortDef = SortDefinitionHelper.GetSortDefinition<TEntity>(orderBy);
         return FindAsyncImpl(filter, offset, limit, sortDef);
     }
 
-    private async Task<IList<TEntity>> FindAsyncImpl(FilterDefinition<TEntity> filter, int offset, int limit, SortDefinition<TEntity>? sort)
+    private async Task<IListViewModel<TEntity>> FindAsyncImpl(FilterDefinition<TEntity> filter, int offset, int limit, SortDefinition<TEntity>? sort)
     {
         var opts = new FindOptions<TEntity> { Skip  = offset, Limit = limit };
         // Apply sorting
         if (sort != null) opts.Sort = sort;
 
+        return await FindAsyncImpl(filter, opts);
+    }
+
+    private async Task<IListViewModel<TEntity>> FindAsyncImpl(FilterDefinition<TEntity> filter, FindOptions<TEntity> opts)
+    {
         if (_logger != null)
         {
             // Render filter for logging
             var rendered = filter.Render(Collection.DocumentSerializer, Collection.Settings.SerializerRegistry);
-            _logger?.LogInformation("FindAsyncImpl: {FilterDef}", rendered);
+            _logger.LogInformation("FindAsyncImpl: {FilterDef}", rendered);
         }
 
-        var result = await Collection.FindAsync(filter, opts);
-        return await result.ToListAsync();
+        var pageTask = Collection.FindAsync(filter, opts);
+
+        var tasks = new List<Task<IAsyncCursor<TEntity>>> { pageTask };
+
+        var offset = opts.Skip ?? 0;
+        if (opts.Limit > 1)
+        {
+            var nextPageOpts = new FindOptions<TEntity> { Skip  = offset + opts.Limit.Value, Limit = 1 };
+            if (opts.Sort != null) nextPageOpts.Sort = opts.Sort;
+
+            var nextPageTask = Collection.FindAsync(filter, nextPageOpts);
+            tasks.Add(nextPageTask);
+        }
+
+        await Task.WhenAll(tasks);
+
+        var result = new ListViewModel<TEntity>
+        {
+            Documents = await pageTask.Result.ToListAsync(),
+            Offset = offset,
+            Limit = opts.Limit ?? 0, // It should not be ZERO
+            HasNextPage = tasks.Count > 1 && await tasks[1].Result.AnyAsync()
+        };
+
+        return result;
     }
 
     #endregion

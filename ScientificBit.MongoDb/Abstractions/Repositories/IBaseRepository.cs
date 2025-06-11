@@ -122,6 +122,30 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
         SortDefinition<TEntity> sort);
 
     /// <summary>
+    /// Find all documents matching the given filters
+    /// </summary>
+    /// <param name="filters"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters, FindOptions<TEntity> options);
+
+    /// <summary>
+    /// Find all documents matching the given expression
+    /// </summary>
+    /// <param name="expr"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, FindOptions<TEntity> options);
+
+    /// <summary>
+    /// Find all documents matching the given filter definition
+    /// </summary>
+    /// <param name="filter"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, FindOptions<TEntity> options);
+
+    /// <summary>
     /// Count all documents matching this given filter expression
     /// </summary>
     /// <param name="expr"></param>
@@ -181,6 +205,16 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     /// automatically based on TUpdateModel fields.
     /// All `null` values are ignored in TUpdateModel instance
     /// </summary>
+    /// <param name="payload"></param>
+    /// <typeparam name="TUpdateModel"></typeparam>
+    /// <returns></returns>
+    Task<DbResult> UpdateAsync<TUpdateModel>(TUpdateModel payload) where TUpdateModel : IUpdateModel;
+
+    /// <summary>
+    /// Updates a single document. The update definition is generated
+    /// automatically based on TUpdateModel fields.
+    /// All `null` values are ignored in TUpdateModel instance
+    /// </summary>
     /// <param name="documentId"></param>
     /// <param name="payload"></param>
     /// <typeparam name="TUpdateModel"></typeparam>
@@ -199,6 +233,15 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     /// <returns></returns>
     Task<DbResult> UpdateAsync<TUpdateModel>(Expression<Func<TEntity, bool>> expr, TUpdateModel payload,
         bool updateMany) where TUpdateModel : IUpdateModel;
+
+    /// <summary>
+    /// Update documents in bulk. `IUpdateModel.Id` filed is used to match documents.
+    /// </summary>
+    /// <param name="updates"></param>
+    /// <typeparam name="TUpdateModel"></typeparam>
+    /// <returns></returns>
+    Task<BulkWriteResult<TEntity>> BulkUpdateAsync<TUpdateModel>(IList<TUpdateModel> updates)
+        where TUpdateModel : IUpdateModel;
 
     /// <summary>
     /// Deletes a document with given ID.

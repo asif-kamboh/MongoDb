@@ -275,6 +275,16 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         return DeleteAsync(filter, true, permanent);
     }
 
+    public async Task<long> GenerateAutoIncrementIdAsync(long startValue)
+    {
+        return await GetNextSequenceId(Collection.CollectionNamespace.CollectionName, startValue);
+    }
+
+    public async Task<long> GenerateAutoIncrementIdAsync(string sequenceName, long startValue)
+    {
+        return await GetNextSequenceId(sequenceName, startValue);
+    }
+
     #region Protected Methods
 
     protected async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(FilterDefinition<TEntity> filter, TUpdateModel payload, FindOneAndUpdateOptions<TEntity> opts)

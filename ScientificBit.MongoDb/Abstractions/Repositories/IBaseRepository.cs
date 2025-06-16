@@ -302,4 +302,19 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     /// <param name="permanent"></param>
     /// <returns></returns>
     Task<DbResult> DeleteAsync(FilterDefinition<TEntity> filter, bool permanent = false);
+
+    /// <summary>
+    /// Generate an auto-increment ID for underlying entity
+    /// </summary>
+    /// <param name="startValue"></param>
+    /// <returns></returns>
+    Task<long> GenerateAutoIncrementIdAsync(long startValue = 0);
+
+    /// <summary>
+    /// Generate an auto-increment ID for given sequence name
+    /// </summary>
+    /// <param name="sequenceName"></param>
+    /// <param name="startValue"></param>
+    /// <returns></returns>
+    Task<long> GenerateAutoIncrementIdAsync(string sequenceName, long startValue = 0);
 }

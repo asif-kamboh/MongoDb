@@ -32,6 +32,29 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
         }
     }
 
+    internal async Task<long> GetNextSequenceId(string sequenceName, long startValue)
+    {
+        if (startValue < 0) startValue = 0;
+
+        var filter = Builders<AutoIncSequence>.Filter.Eq(s => s.Name, sequenceName);
+        var update = Builders<AutoIncSequence>.Update.Inc(s => s.Value, 1)
+            .SetOnInsert(s => s.Value, startValue + 1);
+        var opts = new FindOneAndUpdateOptions<AutoIncSequence>
+        {
+            IsUpsert = true,
+            ReturnDocument = ReturnDocument.After
+        };
+
+        var collection = _dbContext.GetCollection<AutoIncSequence>("auto_inc_sequences_internal");
+        var sequence = await collection.FindOneAndUpdateAsync(filter, update, opts);
+        if (sequence is null)
+        {
+            throw new MongoException($"Failed to auto-increment generate sequence for {sequenceName}");
+        }
+
+        return sequence.Value;
+    }
+
     /// <summary>
     /// Derived classes must implement it to define indexes on a collection
     /// </summary>

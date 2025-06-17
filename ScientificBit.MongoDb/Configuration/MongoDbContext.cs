@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using ScientificBit.MongoDb.Abstractions.Db;
 using ScientificBit.MongoDb.Attributes;
@@ -20,6 +21,13 @@ public class MongoDbContext : IMongoDbContext
         _client = client;
         _db = _client.GetDatabase(databaseName);
         DatabaseName = databaseName;
+    }
+
+    public async Task<bool> IsReplicaSetAsync()
+    {
+        var isMasterCommand = new BsonDocument { { "isMaster", 1 } };
+        var result = await _client.GetDatabase("admin").RunCommandAsync<BsonDocument>(isMasterCommand);
+        return result.Contains("setName");
     }
 
     public IClientSessionHandle StartSession()

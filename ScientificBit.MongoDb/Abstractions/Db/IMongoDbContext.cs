@@ -10,7 +10,13 @@ public interface IMongoDbContext
     /// <summary>
     /// Database name
     /// </summary>
-    string DatabaseName { get; } 
+    string DatabaseName { get; }
+
+    /// <summary>
+    /// Check if the MongoDB server is a replica set
+    /// </summary>
+    /// <returns></returns>
+    Task<bool> IsReplicaSetAsync();
 
     /// <summary>
     /// Starts MongoDB session

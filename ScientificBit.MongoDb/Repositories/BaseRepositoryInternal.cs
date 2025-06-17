@@ -37,22 +37,41 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
         if (startValue < 0) startValue = 0;
 
         var filter = Builders<AutoIncSequence>.Filter.Eq(s => s.Name, sequenceName);
-        var update = Builders<AutoIncSequence>.Update.Inc(s => s.Value, 1)
-            .SetOnInsert(s => s.Value, startValue + 1);
+        var update = Builders<AutoIncSequence>.Update.Inc(s => s.Value, 1);
         var opts = new FindOneAndUpdateOptions<AutoIncSequence>
         {
-            IsUpsert = true,
             ReturnDocument = ReturnDocument.After
         };
 
         var collection = _dbContext.GetCollection<AutoIncSequence>("auto_inc_sequences_internal");
-        var sequence = await collection.FindOneAndUpdateAsync(filter, update, opts);
-        if (sequence is null)
+        var session = _dbContext.StartSession();
+        try
         {
-            throw new MongoException($"Failed to auto-increment generate sequence for {sequenceName}");
-        }
+            var transactionOpts = await _dbContext.IsReplicaSetAsync()
+                ? new TransactionOptions(readPreference: ReadPreference.Primary)
+                : null;
+            session.StartTransaction(transactionOpts);
+            var sequence = await collection.FindOneAndUpdateAsync(session, filter, update, opts);
+            if (sequence is null)
+            {
+                // Create new sequence. It may cause sync issues though
+                sequence = new AutoIncSequence
+                {
+                    Name = sequenceName,
+                    Value = startValue + 1
+                };
+                await collection.InsertOneAsync(session, sequence);
+            }
 
-        return sequence.Value;
+            await session.CommitTransactionAsync();
+
+            return sequence.Value;
+        }
+        catch (Exception)
+        {
+            await session.AbortTransactionAsync();
+            throw;
+        }
     }
 
     /// <summary>

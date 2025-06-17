@@ -184,7 +184,7 @@ public interface IBaseRepository<TEntity> where TEntity : BaseEntity
     /// <typeparam name="TUpdateModel"></typeparam>
     /// <returns></returns>
     Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(Expression<Func<TEntity, bool>> expr, TUpdateModel payload,
-        bool isUpsert, bool returnUpdated = false)  where TUpdateModel : IUpdateModel;
+        bool isUpsert, bool returnUpdated = true)  where TUpdateModel : IUpdateModel;
 
     /// <summary>
     /// Create a single document

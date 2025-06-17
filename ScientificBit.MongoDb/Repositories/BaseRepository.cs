@@ -54,7 +54,12 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
     public virtual Task<TEntity?> GetAsync(string documentId)
     {
         AssertObjectId(documentId);
-        return FindOneAsync(FiltersBuilder<TEntity>.GetIdFilter(documentId), null);
+        return FindOneAsync(FiltersBuilder<TEntity>.GetIdFilter(documentId));
+    }
+
+    public Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr)
+    {
+        return FindOneAsync(expr, orderBy: null);
     }
 
     public Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, string? orderBy)
@@ -65,6 +70,11 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
     public Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, SortDefinition<TEntity> sort)
     {
         return FindOneAsync((FilterDefinition<TEntity>) expr, sort);
+    }
+
+    public Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter)
+    {
+        return FindOneAsync(filter, orderBy: null);
     }
 
     public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, string? orderBy)
@@ -90,7 +100,13 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         return result;
     }
 
-    public Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, int? offset,  int? limit, string? orderBy)
+    public Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, int? offset, int? limit)
+    {
+        return FindAsync(expr, offset, limit, orderBy: null);
+    }
+
+    public Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, int? offset, int? limit,
+        string? orderBy)
     {
         return FindAsync((FilterDefinition<TEntity>) expr, offset, limit, orderBy);
     }
@@ -100,18 +116,30 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         return FindAsync((FilterDefinition<TEntity>) expr, offset, limit, sort);
     }
 
-    public Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters, int? offset, int? limit, string? orderBy)
+    public Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters, int? offset, int? limit)
+    {
+        return FindAsync(filters, offset, limit, orderBy: null);
+    }
+
+    public Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters, int? offset, int? limit,
+        string? orderBy)
     {
         // Exclude deleted docs
         filters.Add(FiltersBuilder<TEntity>.GetDeleteAtFilter());
         return FindAsync(FiltersBuilder<TEntity>.And(filters), offset, limit, orderBy);
     }
 
-    public Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters, int? offset, int? limit, SortDefinition<TEntity> sort)
+    public Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters, int? offset, int? limit,
+        SortDefinition<TEntity> sort)
     {
         // Exclude deleted docs
         filters.Add(FiltersBuilder<TEntity>.GetDeleteAtFilter());
         return FindAsync(FiltersBuilder<TEntity>.And(filters), offset, limit, sort);
+    }
+
+    public Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, int? offset, int? limit)
+    {
+        return FindAsync(filter, offset, limit, orderBy: null);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, int? offset, int? limit, string? orderBy)
@@ -149,8 +177,14 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         return await FindAsyncImpl(filter, options);
     }
 
+    public Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(string documentId, TUpdateModel payload)
+        where TUpdateModel : IUpdateModel
+    {
+        return FindOneAndUpdateAsync(documentId, payload, returnUpdated: true);
+    }
+
     public virtual Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(string documentId, TUpdateModel payload,
-        bool returnUpdated = true) where TUpdateModel : IUpdateModel
+        bool returnUpdated) where TUpdateModel : IUpdateModel
     {
         var opts = new FindOneAndUpdateOptions<TEntity>
         {
@@ -160,6 +194,12 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
 
         var filter = FiltersBuilder<TEntity>.GetIdFilter(documentId);
         return FindOneAndUpdateAsync(filter, payload, opts);
+    }
+
+    public Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(Expression<Func<TEntity, bool>> expr,
+        TUpdateModel payload, bool isUpsert) where TUpdateModel : IUpdateModel
+    {
+        return FindOneAndUpdateAsync(expr, payload, isUpsert, returnUpdated: true);
     }
 
     public virtual Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(Expression<Func<TEntity, bool>> expr,
@@ -224,12 +264,17 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
             AssertObjectId(update.Id);
 
             var filter = Builders<TEntity>.Filter.Eq(p => p.Id, update.Id);
-            var updateDef = GenerateUpdateDefinition(update, false);
+            var updateDef = GenerateUpdateDefinition(update);
             bulkOps.Add(new UpdateOneModel<TEntity>(filter, updateDef));
         }
 
         var result = await Collection.BulkWriteAsync(bulkOps);
         return result;
+    }
+
+    public Task<TEntity?> FindOneAndDeleteAsync(string documentId)
+    {
+        return FindOneAndDeleteAsync(documentId, permanent: false);
     }
 
     public Task<TEntity?> FindOneAndDeleteAsync(string documentId, bool permanent)
@@ -238,9 +283,19 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         return FindOneAndDeleteAsync(FiltersBuilder<TEntity>.GetIdFilter(documentId), permanent);
     }
 
+    public Task<TEntity?> FindOneAndDeleteAsync(Expression<Func<TEntity, bool>> expr)
+    {
+        return FindOneAndDeleteAsync(expr, permanent: false);
+    }
+
     public Task<TEntity?> FindOneAndDeleteAsync(Expression<Func<TEntity, bool>> expr, bool permanent)
     {
         return FindOneAndDeleteAsync((FilterDefinition<TEntity>) expr, permanent);
+    }
+
+    public Task<TEntity?> FindOneAndDeleteAsync(FilterDefinition<TEntity> filter)
+    {
+        return FindOneAndDeleteAsync(filter, permanent: false);
     }
 
     public async Task<TEntity?> FindOneAndDeleteAsync(FilterDefinition<TEntity> filter, bool permanent)
@@ -259,15 +314,30 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         });
     }
 
+    public Task<DbResult> DeleteOneAsync(string documentId)
+    {
+        return DeleteOneAsync(documentId, permanent: false);
+    }
+
     public Task<DbResult> DeleteOneAsync(string documentId, bool permanent)
     {
         AssertObjectId(documentId);
         return DeleteAsync(FiltersBuilder<TEntity>.GetIdFilter(documentId), false, permanent);
     }
 
+    public Task<DbResult> DeleteAsync(Expression<Func<TEntity, bool>> expr)
+    {
+        return DeleteAsync(expr, permanent: false);
+    }
+
     public Task<DbResult> DeleteAsync(Expression<Func<TEntity, bool>> expr, bool permanent)
     {
         return DeleteAsync((FilterDefinition<TEntity>) expr, true, permanent);
+    }
+
+    public Task<DbResult> DeleteAsync(FilterDefinition<TEntity> filter)
+    {
+        return DeleteAsync(filter, permanent: false);
     }
 
     public Task<DbResult> DeleteAsync(FilterDefinition<TEntity> filter, bool permanent)
@@ -325,7 +395,7 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
     protected virtual Task<DbResult> UpdateAsync<TUpdateModel>(FilterDefinition<TEntity> filter, TUpdateModel payload,
         bool updateMany) where TUpdateModel : IUpdateModel
     {
-        var update = GenerateUpdateDefinition(payload, false);
+        var update = GenerateUpdateDefinition(payload);
         return UpdateAsync(filter, update, updateMany);
     }
 
@@ -362,7 +432,7 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
     /// <param name="payload"></param>
     /// <param name="isUpsert"></param>
     /// <returns></returns>
-    protected virtual UpdateDefinition<TEntity>? GenerateUpdateDefinition(object? payload, bool isUpsert)
+    protected virtual UpdateDefinition<TEntity>? GenerateUpdateDefinition(object? payload, bool isUpsert = false)
     {
         if (payload is UpdateDefinition<TEntity> update) return update;
 
@@ -453,9 +523,10 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
 
     protected void AssertObjectId(string? id)
     {
-        if (!ObjectId.TryParse(id ?? string.Empty, out var _))
+        if (string.IsNullOrEmpty(id)) throw new ArgumentException("Invalid document ID");
+
+        if (!ObjectId.TryParse(id, out _))
         {
-            if (string.IsNullOrEmpty(id)) throw new ArgumentException("Invalid document ID");
             throw new ArgumentException($"Invalid document ID format. Id={id}");
         }
     }

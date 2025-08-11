@@ -45,7 +45,7 @@ public class MongoDbContext : IMongoDbContext
         var models = indexModels.ToList();
         if (models.Count > 0)
         {
-            collection.Indexes.CreateManyAsync(models).ConfigureAwait(false);
+            collection.Indexes.CreateManyAsync(models).GetAwaiter().GetResult();
         }
 
         _indexesCreated.TryAdd(collection.CollectionNamespace.CollectionName, true);

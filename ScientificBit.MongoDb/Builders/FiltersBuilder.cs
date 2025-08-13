@@ -21,11 +21,7 @@ public static class FiltersBuilder<TEntity>
             throw new ArgumentException($"Invalid document Id ({documentId})");
         }
 
-        return And(new List<FilterDefinition<TEntity>>
-        {
-            Builders<TEntity>.Filter.Eq(nameof(BaseEntity.Id), documentId),
-            GetDeleteAtFilter()
-        });
+        return Builders<TEntity>.Filter.Eq(nameof(BaseEntity.Id), documentId);
     }
 
     public static FilterDefinition<TEntity> And(IList<FilterDefinition<TEntity>> filters)
@@ -40,10 +36,10 @@ public static class FiltersBuilder<TEntity>
         return filters.Count == 1 ? filters[0] : Builders<TEntity>.Filter.Or(filters);
     }
 
-    public static FilterDefinition<TEntity> GetDeleteAtFilter()
-    {
-        return Builders<TEntity>.Filter.Eq(nameof(BaseEntity.DeletedAt), BsonNull.Value);
-    }
+    // public static FilterDefinition<TEntity> GetDeleteAtFilter()
+    // {
+    //     return Builders<TEntity>.Filter.Eq(nameof(BaseEntity.DeletedAt), BsonNull.Value);
+    // }
 
     public static FilterDefinition<TEntity>? GetTextSearchFilter(string? value)
     {

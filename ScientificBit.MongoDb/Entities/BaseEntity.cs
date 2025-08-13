@@ -5,10 +5,6 @@ namespace ScientificBit.MongoDb.Entities;
 
 public abstract class BaseEntity
 {
-    protected BaseEntity()
-    {
-    }
-    
     /// <summary>
     /// Gets or sets the Id of the Entity.
     /// </summary>
@@ -21,7 +17,7 @@ public abstract class BaseEntity
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public DateTime? DeletedAt { get; set; }
+    // public DateTime? DeletedAt { get; set; }
 
     public virtual void Validate()
     {

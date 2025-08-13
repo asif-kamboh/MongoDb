@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using ScientificBit.MongoDb.Abstractions.Db;
 using ScientificBit.MongoDb.Entities;
@@ -6,6 +7,7 @@ namespace ScientificBit.MongoDb.Repositories;
 
 public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
 {
+    private readonly ILogger? _logger;
     private readonly IMongoDbContext _dbContext;
     private readonly IMongoCollection<TEntity> _collection;
 
@@ -18,8 +20,9 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
         }
     }
 
-    protected BaseRepositoryInternal(IMongoDbContext dbContext)
+    protected BaseRepositoryInternal(ILogger? logger, IMongoDbContext dbContext)
     {
+        _logger = logger;
         _dbContext = dbContext;
         _collection = dbContext.GetCollection<TEntity>();
     }
@@ -44,13 +47,9 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
         };
 
         var collection = _dbContext.GetCollection<AutoIncSequence>("auto_inc_sequences_internal");
-        var session = _dbContext.StartSession();
+        var session = await StartTransactionAsync();
         try
         {
-            var transactionOpts = await _dbContext.IsReplicaSetAsync()
-                ? new TransactionOptions(readPreference: ReadPreference.Primary)
-                : null;
-            session.StartTransaction(transactionOpts);
             var sequence = await collection.FindOneAndUpdateAsync(session, filter, update, opts);
             if (sequence is null)
             {
@@ -67,11 +66,34 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
 
             return sequence.Value;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await session.AbortTransactionAsync();
+            _logger?.LogError(ex,
+                "Failed to get next sequence ID. SequenceName={SequenceName}, StartValue={StartValue}, Error={Message}",
+                sequenceName, startValue, ex.Message);
             throw;
         }
+    }
+
+    protected async Task<IClientSessionHandle> StartTransactionAsync()
+    {
+#pragma warning disable CS0618 // Type or member is obsolete
+        var session = _dbContext.StartSession();
+#pragma warning restore CS0618 // Type or member is obsolete
+        try
+        {
+            var transactionOpts = await _dbContext.IsReplicaSetAsync()
+                ? new TransactionOptions(readPreference: ReadPreference.Primary)
+                : null;
+            session.StartTransaction(transactionOpts);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to start transaction. Error={Message}", ex.Message);
+        }
+
+        return session;
     }
 
     /// <summary>

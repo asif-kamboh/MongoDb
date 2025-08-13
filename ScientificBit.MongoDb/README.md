@@ -3,6 +3,22 @@ The package implements a repository layer over MongoDB collections.
 Developers can easily define CRUD operations on a Collection by just
 deriving their collection-wise repository classes from `BaseRepository` class.
 
+# Release Notes
+## v3.0.0 (Release Date: 2025-08-11)
+### Changes and Fixes
+* Introduced `FindOneAsync` methods variants in `BaseRepository` class to find a single document by filter or by id.
+* Added `BaseRepository` method variants to accept `IClientSessionHandle` for operations that require a session.
+* **DEPRECATION:** `StartSession` method in `IMongoDbContext` is now deprecated. Use `BaseRepository.StartTransactionAsync` instead.
+### Breaking Changes
+* Removed `DeletedAt` field from `BaseEntity` class. If you want to support
+  soft deletes, you can just define a `DeletedAt` field in your entity model.
+* Removed `GetDeleteAtFilter` method from `FiltersBuilder` class.
+
+## v2.2.3 (Release Date: 2025-08-10)
+### Changes and Fixes
+* **BUG FIX**: `CreateIndexes` method in `IMongoDbContext` now awaits for index creation to complete before returning.
+* **BREAKING CHANGE:** Since `CreateIndexes` is no more fire-and-forget, it may break existing code that relies on the previous behavior. Ensure to handle the asynchronous nature of this method in your code.
+
 ## How to Integrate
 The package is built for .NET 8, 9 and supports MongoDB v6+. 
 

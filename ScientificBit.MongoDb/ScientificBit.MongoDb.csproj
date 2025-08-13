@@ -6,7 +6,8 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Nullable>enable</Nullable>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-    <Version>2.2.2</Version>
+    <Version>3.0.1</Version>
+    <PackageReleaseNotes>Brought back IMongoCollection extensions for FindOne methods </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

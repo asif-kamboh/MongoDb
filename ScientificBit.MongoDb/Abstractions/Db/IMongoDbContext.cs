@@ -19,9 +19,10 @@ public interface IMongoDbContext
     Task<bool> IsReplicaSetAsync();
 
     /// <summary>
-    /// Starts MongoDB session
+    /// Starts a MongoDB session
     /// </summary>
     /// <returns></returns>
+    [Obsolete("Use BaseRepository.StartTransactionAsync instead")]
     IClientSessionHandle StartSession();
 
     /// <summary>

@@ -155,7 +155,9 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
 
     public async Task<long> CountDocumentsAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter)
     {
-        var result = await Collection.CountDocumentsAsync(session, filter);
+        var result = session != null
+            ? await Collection.CountDocumentsAsync(session, filter)
+            : await Collection.CountDocumentsAsync(filter);
         return result;
     }
 

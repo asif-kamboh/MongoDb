@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -16,7 +16,7 @@ using ScientificBit.MongoDb.Utils;
 namespace ScientificBit.MongoDb.Repositories;
 
 /// <summary>
-/// Defines Generic repository for MongoDB document manipulation operations 
+/// Defines Generic repository for MongoDB document manipulation operations
 /// </summary>
 /// <typeparam name="TEntity"></typeparam>
 public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>, IBaseRepository<TEntity>
@@ -61,262 +61,281 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         return indexModels;
     }
 
-    public virtual async Task<TEntity?> GetAsync(string documentId)
+    public virtual async Task<TEntity?> GetAsync(string documentId, CancellationToken cancellationToken = default)
     {
-        return await GetAsync(null, documentId);
+        return await GetAsync(null, documentId, cancellationToken);
     }
 
-    public virtual async Task<TEntity?> GetAsync(IClientSessionHandle? session, string documentId)
+    public virtual async Task<TEntity?> GetAsync(IClientSessionHandle? session, string documentId,
+        CancellationToken cancellationToken = default)
     {
         AssertObjectId(documentId);
-        return await FindOneAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId));
+        return await FindOneAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId),
+            cancellationToken: cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr)
+    public async Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr,
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAsync(null, expr);
-    }
-
-    public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, Expression<Func<TEntity, bool>> expr)
-    {
-        return await FindOneAsync(session, expr, orderBy: null);
-    }
-
-    public async Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, string? orderBy)
-    {
-        return await FindOneAsync(null, expr, orderBy);
+        return await FindOneAsync(null, expr, cancellationToken: cancellationToken);
     }
 
     public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, Expression<Func<TEntity, bool>> expr,
-        string? orderBy)
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAsync(session, (FilterDefinition<TEntity>) expr, orderBy);
+        return await FindOneAsync(session, expr, orderBy: null, cancellationToken: cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, SortDefinition<TEntity> sort)
+    public async Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, string? orderBy,
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAsync(null, expr, sort);
+        return await FindOneAsync(null, expr, orderBy, cancellationToken);
     }
 
     public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, Expression<Func<TEntity, bool>> expr,
-        SortDefinition<TEntity> sort)
+        string? orderBy, CancellationToken cancellationToken = default)
     {
-        return await FindOneAsync(session, (FilterDefinition<TEntity>) expr, sort);
+        return await FindOneAsync(session, (FilterDefinition<TEntity>) expr, orderBy, cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter)
+    public async Task<TEntity?> FindOneAsync(Expression<Func<TEntity, bool>> expr, SortDefinition<TEntity> sort,
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAsync(session: null, filter);
+        return await FindOneAsync(null, expr, sort, cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter)
+    public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, Expression<Func<TEntity, bool>> expr,
+        SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
-        return await FindOneAsync(session, filter, orderBy: null);
+        return await FindOneAsync(session, (FilterDefinition<TEntity>) expr, sort, cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, string? orderBy)
+    public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter,
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAsync(null, filter, orderBy);
-    }
-
-    public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        string? orderBy)
-    {
-        var result = await FindAsyncImpl(session, filter, 0, 1, orderBy);
-        return result.Documents.FirstOrDefault();
-    }
-
-    public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, SortDefinition<TEntity> sort)
-    {
-        return await FindOneAsync(null, filter, sort);
+        return await FindOneAsync(session: null, filter, cancellationToken: cancellationToken);
     }
 
     public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        SortDefinition<TEntity> sort)
+        CancellationToken cancellationToken = default)
     {
-        var result = await FindAsyncImpl(session, filter, 0, 1, sort);
+        return await FindOneAsync(session, filter, orderBy: null, cancellationToken: cancellationToken);
+    }
+
+    public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, string? orderBy,
+        CancellationToken cancellationToken = default)
+    {
+        return await FindOneAsync(null, filter, orderBy, cancellationToken);
+    }
+
+    public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
+        string? orderBy, CancellationToken cancellationToken = default)
+    {
+        var result = await FindAsyncImpl(session, filter, 0, 1, orderBy, cancellationToken);
         return result.Documents.FirstOrDefault();
     }
 
-    public async Task<long> CountDocumentsAsync(Expression<Func<TEntity, bool>> expr)
+    public async Task<TEntity?> FindOneAsync(FilterDefinition<TEntity> filter, SortDefinition<TEntity> sort,
+        CancellationToken cancellationToken = default)
     {
-        return await CountDocumentsAsync(null, expr);
+        return await FindOneAsync(null, filter, sort, cancellationToken);
     }
 
-    public async Task<long> CountDocumentsAsync(IClientSessionHandle? session, Expression<Func<TEntity, bool>> expr)
+    public async Task<TEntity?> FindOneAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
+        SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
-        return await CountDocumentsAsync(session, (FilterDefinition<TEntity>) expr);
+        var result = await FindAsyncImpl(session, filter, 0, 1, sort, cancellationToken);
+        return result.Documents.FirstOrDefault();
     }
 
-    public async Task<long> CountDocumentsAsync(FilterDefinition<TEntity> filter)
+    public async Task<long> CountDocumentsAsync(Expression<Func<TEntity, bool>> expr,
+        CancellationToken cancellationToken = default)
     {
-        return await CountDocumentsAsync(null, filter);
+        return await CountDocumentsAsync(null, expr, cancellationToken);
     }
 
-    public async Task<long> CountDocumentsAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter)
+    public async Task<long> CountDocumentsAsync(IClientSessionHandle? session, Expression<Func<TEntity, bool>> expr,
+        CancellationToken cancellationToken = default)
+    {
+        return await CountDocumentsAsync(session, (FilterDefinition<TEntity>) expr, cancellationToken);
+    }
+
+    public async Task<long> CountDocumentsAsync(FilterDefinition<TEntity> filter,
+        CancellationToken cancellationToken = default)
+    {
+        return await CountDocumentsAsync(null, filter, cancellationToken);
+    }
+
+    public async Task<long> CountDocumentsAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
+        CancellationToken cancellationToken = default)
     {
         var result = session != null
-            ? await Collection.CountDocumentsAsync(session, filter)
-            : await Collection.CountDocumentsAsync(filter);
+            ? await Collection.CountDocumentsAsync(session, filter, cancellationToken: cancellationToken)
+            : await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
         return result;
     }
 
-    public async Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, int? offset, int? limit)
+    public async Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, int? offset,
+        int? limit, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(expr, offset, limit, orderBy: null);
+        return await FindAsync(expr, offset, limit, orderBy: null, cancellationToken: cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, int? offset, int? limit,
-        string? orderBy)
+        string? orderBy, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, expr, offset, limit, orderBy);
+        return await FindAsync(null, expr, offset, limit, orderBy, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         Expression<Func<TEntity, bool>> expr,
-        int? offset, int? limit, string? orderBy)
+        int? offset, int? limit, string? orderBy, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(session, (FilterDefinition<TEntity>) expr, offset, limit, orderBy);
+        return await FindAsync(session, (FilterDefinition<TEntity>) expr, offset, limit, orderBy, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr, int? offset, int? limit,
-        SortDefinition<TEntity> sort)
+        SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, expr, offset, limit, sort);
+        return await FindAsync(null, expr, offset, limit, sort, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         Expression<Func<TEntity, bool>> expr,
         int? offset, int? limit,
-        SortDefinition<TEntity> sort)
+        SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(session, (FilterDefinition<TEntity>) expr, offset, limit, sort);
+        return await FindAsync(session, (FilterDefinition<TEntity>) expr, offset, limit, sort, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters, int? offset,
-        int? limit)
+        int? limit, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(filters, offset, limit, orderBy: null);
+        return await FindAsync(filters, offset, limit, orderBy: null, cancellationToken: cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters,
-        int? offset, int? limit, string? orderBy)
+        int? offset, int? limit, string? orderBy, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, filters, offset, limit, orderBy);
+        return await FindAsync(null, filters, offset, limit, orderBy, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         IList<FilterDefinition<TEntity>> filters,
         int? offset, int? limit,
-        string? orderBy)
+        string? orderBy, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(session,FiltersBuilder<TEntity>.And(filters), offset, limit, orderBy);
+        return await FindAsync(session, FiltersBuilder<TEntity>.And(filters), offset, limit, orderBy, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters,
-        int? offset, int? limit, SortDefinition<TEntity> sort)
+        int? offset, int? limit, SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, filters, offset, limit, sort);
+        return await FindAsync(null, filters, offset, limit, sort, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         IList<FilterDefinition<TEntity>> filters, int? offset, int? limit,
-        SortDefinition<TEntity> sort)
+        SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(session, FiltersBuilder<TEntity>.And(filters), offset, limit, sort);
+        return await FindAsync(session, FiltersBuilder<TEntity>.And(filters), offset, limit, sort, cancellationToken);
     }
 
-    public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, int? offset, int? limit)
+    public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, int? offset, int? limit,
+        CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, filter, offset, limit);
+        return await FindAsync(null, filter, offset, limit, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
-        FilterDefinition<TEntity> filter, int? offset, int? limit)
+        FilterDefinition<TEntity> filter, int? offset, int? limit, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(session, filter, offset, limit, orderBy: null);
+        return await FindAsync(session, filter, offset, limit, orderBy: null, cancellationToken: cancellationToken);
     }
 
-    public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, int? offset, int? limit, string? orderBy)
+    public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, int? offset, int? limit, string? orderBy,
+        CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, filter, offset, limit, orderBy);
+        return await FindAsync(null, filter, offset, limit, orderBy, cancellationToken);
     }
 
-    public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter, int? offset, int? limit, string? orderBy)
+    public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter, int? offset, int? limit, string? orderBy,
+        CancellationToken cancellationToken = default)
     {
         var pageSize = limit ?? DefaultLimit;
         if (pageSize == -1) pageSize = int.MaxValue; // Removes the limit if -1 is passed
 
         var pageOffset = offset ?? 0;
 
-        return await FindAsyncImpl(session, filter, pageOffset, pageSize, orderBy);
+        return await FindAsyncImpl(session, filter, pageOffset, pageSize, orderBy, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter,
         int? offset, int? limit,
-        SortDefinition<TEntity> sort)
+        SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, filter, offset, limit, sort);
+        return await FindAsync(null, filter, offset, limit, sort, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         FilterDefinition<TEntity> filter,
         int? offset, int? limit,
-        SortDefinition<TEntity> sort)
+        SortDefinition<TEntity> sort, CancellationToken cancellationToken = default)
     {
         var pageSize = limit ?? DefaultLimit;
         if(pageSize == -1) pageSize = int.MaxValue; // Removes the limit if -1 is passed
         var pageOffset = offset ?? 0;
-        return await FindAsyncImpl(session, filter, pageOffset, pageSize, sort);
+        return await FindAsyncImpl(session, filter, pageOffset, pageSize, sort, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IList<FilterDefinition<TEntity>> filters,
-        FindOptions<TEntity> options)
+        FindOptions<TEntity> options, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, filters, options);
+        return await FindAsync(null, filters, options, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         IList<FilterDefinition<TEntity>> filters,
-        FindOptions<TEntity> options)
+        FindOptions<TEntity> options, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(session, FiltersBuilder<TEntity>.And(filters), options);
+        return await FindAsync(session, FiltersBuilder<TEntity>.And(filters), options, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(Expression<Func<TEntity, bool>> expr,
-        FindOptions<TEntity> options)
+        FindOptions<TEntity> options, CancellationToken cancellationToken = default)
     {
-        return await FindAsync((FilterDefinition<TEntity>) expr, options);
+        return await FindAsync((FilterDefinition<TEntity>) expr, options, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         Expression<Func<TEntity, bool>> expr,
-        FindOptions<TEntity> options)
+        FindOptions<TEntity> options, CancellationToken cancellationToken = default)
     {
-        return await FindAsync(session, (FilterDefinition<TEntity>) expr, options);
+        return await FindAsync(session, (FilterDefinition<TEntity>) expr, options, cancellationToken);
     }
 
-    public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, FindOptions<TEntity> options)
+    public async Task<IListViewModel<TEntity>> FindAsync(FilterDefinition<TEntity> filter, FindOptions<TEntity> options,
+        CancellationToken cancellationToken = default)
     {
-        return await FindAsync(null, filter, options);
+        return await FindAsync(null, filter, options, cancellationToken);
     }
 
     public async Task<IListViewModel<TEntity>> FindAsync(IClientSessionHandle? session,
         FilterDefinition<TEntity> filter,
-        FindOptions<TEntity> options)
+        FindOptions<TEntity> options, CancellationToken cancellationToken = default)
     {
-        return await FindAsyncImpl(session, filter, options);
+        return await FindAsyncImpl(session, filter, options, cancellationToken);
     }
 
     public virtual async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(string documentId, TUpdateModel payload,
-        bool returnUpdated) where TUpdateModel : IUpdateModel
+        bool returnUpdated, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
-        return await FindOneAndUpdateAsync(null, documentId, payload, returnUpdated);
+        return await FindOneAndUpdateAsync(null, documentId, payload, returnUpdated, cancellationToken);
     }
 
     public virtual async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(IClientSessionHandle? session,
         string documentId, TUpdateModel payload,
-        bool returnUpdated) where TUpdateModel : IUpdateModel
+        bool returnUpdated, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
         var opts = new FindOneAndUpdateOptions<TEntity>
         {
@@ -325,19 +344,20 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         };
 
         var filter = FiltersBuilder<TEntity>.GetIdFilter(documentId);
-        return await FindOneAndUpdateAsync(session, filter, payload, opts);
+        return await FindOneAndUpdateAsync(session, filter, payload, opts, cancellationToken);
     }
 
     public virtual async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(Expression<Func<TEntity, bool>> expr,
-        TUpdateModel payload, bool isUpsert, bool returnUpdated) where TUpdateModel : IUpdateModel
+        TUpdateModel payload, bool isUpsert, bool returnUpdated, CancellationToken cancellationToken = default)
+        where TUpdateModel : IUpdateModel
     {
-        return await FindOneAndUpdateAsync(null, expr, payload, isUpsert, returnUpdated);
+        return await FindOneAndUpdateAsync(null, expr, payload, isUpsert, returnUpdated, cancellationToken);
     }
 
     public virtual async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(IClientSessionHandle? session,
         Expression<Func<TEntity, bool>> expr,
         TUpdateModel payload,
-        bool isUpsert, bool returnUpdated) where TUpdateModel : IUpdateModel
+        bool isUpsert, bool returnUpdated, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
         var opts = new FindOneAndUpdateOptions<TEntity>
         {
@@ -345,90 +365,96 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
             IsUpsert = isUpsert
         };
 
-        return await FindOneAndUpdateAsync(session, (FilterDefinition<TEntity>)expr, payload, opts);
+        return await FindOneAndUpdateAsync(session, (FilterDefinition<TEntity>)expr, payload, opts, cancellationToken);
     }
 
-    public virtual async Task CreateAsync(TEntity document)
+    public virtual async Task CreateAsync(TEntity document, CancellationToken cancellationToken = default)
     {
-        await CreateAsync(session: null, document);
+        await CreateAsync(session: null, document, cancellationToken);
     }
 
-    public virtual async Task CreateAsync(IClientSessionHandle? session, TEntity document)
+    public virtual async Task CreateAsync(IClientSessionHandle? session, TEntity document,
+        CancellationToken cancellationToken = default)
     {
         // Validate Input model
         document.Validate();
 
         if (session != null)
         {
-            await Collection.InsertOneAsync(session, document);
+            await Collection.InsertOneAsync(session, document, cancellationToken: cancellationToken);
         }
         else
         {
-            await Collection.InsertOneAsync(document);
+            await Collection.InsertOneAsync(document, cancellationToken: cancellationToken);
         }
     }
 
-    public virtual async Task CreateManyAsync(IList<TEntity> documents)
+    public virtual async Task CreateManyAsync(IList<TEntity> documents, CancellationToken cancellationToken = default)
     {
-        await CreateManyAsync(null, documents);
+        await CreateManyAsync(null, documents, cancellationToken);
     }
 
-    public virtual async Task CreateManyAsync(IClientSessionHandle? session, IList<TEntity> documents)
+    public virtual async Task CreateManyAsync(IClientSessionHandle? session, IList<TEntity> documents,
+        CancellationToken cancellationToken = default)
     {
         if (!documents.Any()) return;
         documents.ToList().ForEach(doc => doc.Validate());
 
         if (session != null)
         {
-            await Collection.InsertManyAsync(session, documents);
+            await Collection.InsertManyAsync(session, documents, cancellationToken: cancellationToken);
         }
         else
         {
-            await Collection.InsertManyAsync(documents);
+            await Collection.InsertManyAsync(documents, cancellationToken: cancellationToken);
         }
     }
 
-    public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(TUpdateModel payload)
+    public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(TUpdateModel payload,
+        CancellationToken cancellationToken = default)
         where TUpdateModel : IUpdateModel
     {
-        return await UpdateAsync(session: null, payload);
+        return await UpdateAsync(session: null, payload, cancellationToken);
     }
 
     public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(IClientSessionHandle? session,
-        TUpdateModel payload) where TUpdateModel : IUpdateModel
+        TUpdateModel payload, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
         AssertObjectId(payload.Id);
-        return await UpdateAsync(session, payload.Id!, payload);
+        return await UpdateAsync(session, payload.Id!, payload, cancellationToken);
     }
 
-    public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(string documentId, TUpdateModel payload)
+    public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(string documentId, TUpdateModel payload,
+        CancellationToken cancellationToken = default)
         where TUpdateModel : IUpdateModel
     {
-        return await UpdateAsync(null, documentId, payload);
+        return await UpdateAsync(null, documentId, payload, cancellationToken);
     }
 
     public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(IClientSessionHandle? session, string documentId,
-        TUpdateModel payload) where TUpdateModel : IUpdateModel
+        TUpdateModel payload, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
         AssertObjectId(documentId);
-        return await UpdateAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId), payload, false);
+        return await UpdateAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId), payload, false,
+            cancellationToken);
     }
 
     public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(Expression<Func<TEntity, bool>> expr, TUpdateModel payload,
-        bool updateMany) where TUpdateModel : IUpdateModel
+        bool updateMany, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
-        return await UpdateAsync(null, expr, payload, updateMany);
+        return await UpdateAsync(null, expr, payload, updateMany, cancellationToken);
     }
 
     public virtual async Task<DbResult> UpdateAsync<TUpdateModel>(IClientSessionHandle? session,
         Expression<Func<TEntity, bool>> expr,
         TUpdateModel payload,
-        bool updateMany) where TUpdateModel : IUpdateModel
+        bool updateMany, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
-        return await UpdateAsync(session, (FilterDefinition<TEntity>) expr, payload, updateMany);
+        return await UpdateAsync(session, (FilterDefinition<TEntity>) expr, payload, updateMany, cancellationToken);
     }
 
-    public virtual async Task<BulkWriteResult<TEntity>> BulkUpdateAsync<TUpdateModel>(IList<TUpdateModel> updates)
+    public virtual async Task<BulkWriteResult<TEntity>> BulkUpdateAsync<TUpdateModel>(IList<TUpdateModel> updates,
+        CancellationToken cancellationToken = default)
         where TUpdateModel : IUpdateModel
     {
         var bulkOps = new List<WriteModel<TEntity>>();
@@ -447,43 +473,48 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
             bulkOps.Add(new UpdateOneModel<TEntity>(filter, updateDef));
         }
 
-        var result = await Collection.BulkWriteAsync(bulkOps);
+        var result = await Collection.BulkWriteAsync(bulkOps, cancellationToken: cancellationToken);
         return result;
     }
 
-    public async Task<TEntity?> FindOneAndDeleteAsync(string documentId, bool permanent)
+    public async Task<TEntity?> FindOneAndDeleteAsync(string documentId, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAndDeleteAsync(null, documentId, permanent);
+        return await FindOneAndDeleteAsync(null, documentId, permanent, cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAndDeleteAsync(IClientSessionHandle? session, string documentId, bool permanent)
+    public async Task<TEntity?> FindOneAndDeleteAsync(IClientSessionHandle? session, string documentId, bool permanent,
+        CancellationToken cancellationToken = default)
     {
         AssertObjectId(documentId);
-        return await FindOneAndDeleteAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId), permanent);
+        return await FindOneAndDeleteAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId), permanent,
+            cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAndDeleteAsync(Expression<Func<TEntity, bool>> expr, bool permanent)
+    public async Task<TEntity?> FindOneAndDeleteAsync(Expression<Func<TEntity, bool>> expr, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAndDeleteAsync(null, expr, permanent);
+        return await FindOneAndDeleteAsync(null, expr, permanent, cancellationToken);
     }
 
     public async Task<TEntity?> FindOneAndDeleteAsync(IClientSessionHandle? session,
-        Expression<Func<TEntity, bool>> expr, bool permanent)
+        Expression<Func<TEntity, bool>> expr, bool permanent, CancellationToken cancellationToken = default)
     {
-        return await FindOneAndDeleteAsync(session, (FilterDefinition<TEntity>) expr, permanent);
+        return await FindOneAndDeleteAsync(session, (FilterDefinition<TEntity>) expr, permanent, cancellationToken);
     }
 
-    public async Task<TEntity?> FindOneAndDeleteAsync(FilterDefinition<TEntity> filter, bool permanent)
+    public async Task<TEntity?> FindOneAndDeleteAsync(FilterDefinition<TEntity> filter, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await FindOneAndDeleteAsync(null, filter, permanent);
+        return await FindOneAndDeleteAsync(null, filter, permanent, cancellationToken);
     }
 
     public async Task<TEntity?> FindOneAndDeleteAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        bool permanent)
+        bool permanent, CancellationToken cancellationToken = default)
     {
         if (permanent || !SupportsSoftDelete)
         {
-            return await Collection.FindOneAndDeleteAsync(filter);
+            return await Collection.FindOneAndDeleteAsync(filter, cancellationToken: cancellationToken);
         }
 
         var updateDef = Builders<TEntity>.Update.Set(SoftDeleteFieldName, DateTime.UtcNow);
@@ -494,77 +525,100 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         };
 
         return session != null
-            ? await Collection.FindOneAndUpdateAsync(session, filter, updateDef, opts)
-            : await Collection.FindOneAndUpdateAsync(filter, updateDef, opts);
+            ? await Collection.FindOneAndUpdateAsync(session, filter, updateDef, opts, cancellationToken)
+            : await Collection.FindOneAndUpdateAsync(filter, updateDef, opts, cancellationToken);
     }
 
-    public async Task<DbResult> DeleteOneAsync(string documentId, bool permanent)
+    public async Task<DbResult> DeleteOneAsync(string documentId, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await DeleteOneAsync(null, documentId, permanent);
+        return await DeleteOneAsync(null, documentId, permanent, cancellationToken);
     }
 
-    public async Task<DbResult> DeleteOneAsync(IClientSessionHandle? session, string documentId, bool permanent)
+    public async Task<DbResult> DeleteOneAsync(IClientSessionHandle? session, string documentId, bool permanent,
+        CancellationToken cancellationToken = default)
     {
         AssertObjectId(documentId);
-        return await DeleteAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId), false, permanent);
+        return await DeleteAsync(session, FiltersBuilder<TEntity>.GetIdFilter(documentId), false, permanent,
+            cancellationToken);
     }
 
-    public async Task<DbResult> DeleteAsync(Expression<Func<TEntity, bool>> expr, bool permanent)
+    public async Task<DbResult> DeleteAsync(Expression<Func<TEntity, bool>> expr, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await DeleteAsync(null, expr, permanent);
+        return await DeleteAsync(null, expr, permanent, cancellationToken);
     }
 
     public async Task<DbResult> DeleteAsync(IClientSessionHandle? session, Expression<Func<TEntity, bool>> expr,
-        bool permanent)
+        bool permanent, CancellationToken cancellationToken = default)
     {
-        return await DeleteAsync(session, (FilterDefinition<TEntity>) expr, true, permanent);
+        return await DeleteAsync(session, (FilterDefinition<TEntity>) expr, true, permanent, cancellationToken);
     }
 
-    public async Task<DbResult> DeleteAsync(FilterDefinition<TEntity> filter, bool permanent)
+    public async Task<DbResult> DeleteAsync(FilterDefinition<TEntity> filter, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await DeleteAsync(filter, true, permanent);
+        return await DeleteAsync(filter, true, permanent, cancellationToken);
     }
 
-    public async Task<DbResult> DeleteAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter, bool permanent)
+    public async Task<DbResult> DeleteAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await DeleteAsync(session, filter, true, permanent);
+        return await DeleteAsync(session, filter, true, permanent, cancellationToken);
     }
 
-    public async Task<long> GenerateAutoIncrementIdAsync(long startValue)
+    public async Task<long> GenerateAutoIncrementIdAsync(long startValue, CancellationToken cancellationToken = default)
     {
-        return await GetNextSequenceId(Collection.CollectionNamespace.CollectionName, startValue);
+        return await GenerateAutoIncrementIdAsync(Collection.CollectionNamespace.CollectionName, startValue,
+            cancellationToken);
     }
 
-    public async Task<long> GenerateAutoIncrementIdAsync(string sequenceName, long startValue)
+    public async Task<long> GenerateAutoIncrementIdAsync(IClientSessionHandle? session, long startValue,
+        CancellationToken cancellationToken = default)
     {
-        return await GetNextSequenceId(sequenceName, startValue);
+        return await GenerateAutoIncrementIdAsync(session, Collection.CollectionNamespace.CollectionName, startValue,
+            cancellationToken);
+    }
+
+    public async Task<long> GenerateAutoIncrementIdAsync(string sequenceName, long startValue,
+        CancellationToken cancellationToken = default)
+    {
+        return await GenerateAutoIncrementIdAsync(null, sequenceName, startValue, cancellationToken);
+    }
+
+    public async Task<long> GenerateAutoIncrementIdAsync(IClientSessionHandle? session, string sequenceName,
+        long startValue, CancellationToken cancellationToken = default)
+    {
+        return await GetNextSequenceId(sequenceName, startValue, session, cancellationToken);
     }
 
     #region Protected Methods
 
-    protected virtual async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(FilterDefinition<TEntity> filter, TUpdateModel payload, FindOneAndUpdateOptions<TEntity> opts)
+    protected virtual async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(FilterDefinition<TEntity> filter,
+        TUpdateModel payload, FindOneAndUpdateOptions<TEntity> opts, CancellationToken cancellationToken = default)
     {
-        return await FindOneAndUpdateAsync(null, filter, payload, opts);
+        return await FindOneAndUpdateAsync(null, filter, payload, opts, cancellationToken);
     }
 
     protected virtual async Task<TEntity?> FindOneAndUpdateAsync<TUpdateModel>(IClientSessionHandle? session,
         FilterDefinition<TEntity> filter,
-        TUpdateModel payload, FindOneAndUpdateOptions<TEntity> opts)
+        TUpdateModel payload, FindOneAndUpdateOptions<TEntity> opts, CancellationToken cancellationToken = default)
     {
         var update = GenerateUpdateDefinition(payload, opts.IsUpsert);
 
         return session != null
-            ? await Collection.FindOneAndUpdateAsync(session, filter, update, opts)
-            : await Collection.FindOneAndUpdateAsync(filter, update, opts);
+            ? await Collection.FindOneAndUpdateAsync(session, filter, update, opts, cancellationToken)
+            : await Collection.FindOneAndUpdateAsync(filter, update, opts, cancellationToken);
     }
 
-    protected async Task<DbResult> DeleteAsync(FilterDefinition<TEntity> filter, bool deleteMany, bool permanent)
+    protected async Task<DbResult> DeleteAsync(FilterDefinition<TEntity> filter, bool deleteMany, bool permanent,
+        CancellationToken cancellationToken = default)
     {
-        return await DeleteAsync(null, filter, deleteMany, permanent);
+        return await DeleteAsync(null, filter, deleteMany, permanent, cancellationToken);
     }
 
     protected async Task<DbResult> DeleteAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        bool deleteMany, bool permanent)
+        bool deleteMany, bool permanent, CancellationToken cancellationToken = default)
     {
         if (permanent || !SupportsSoftDelete)
         {
@@ -572,50 +626,51 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
             if (session != null)
             {
                 result = deleteMany
-                    ? await Collection.DeleteManyAsync(session, filter)
-                    : await Collection.DeleteOneAsync(session, filter);
+                    ? await Collection.DeleteManyAsync(session, filter, cancellationToken: cancellationToken)
+                    : await Collection.DeleteOneAsync(session, filter, cancellationToken: cancellationToken);
             }
             else
             {
                 result = deleteMany
-                    ? await Collection.DeleteManyAsync(filter)
-                    : await Collection.DeleteOneAsync(filter);
+                    ? await Collection.DeleteManyAsync(filter, cancellationToken: cancellationToken)
+                    : await Collection.DeleteOneAsync(filter, cancellationToken: cancellationToken);
             }
 
             return result.IsAcknowledged ? new DbResult(result.DeletedCount) : new DbResult(0);
         }
 
         var update = Builders<TEntity>.Update.Set(SoftDeleteFieldName, DateTime.UtcNow);
-        return await UpdateAsync(session, filter, update, deleteMany);
+        return await UpdateAsync(session, filter, update, deleteMany, cancellationToken);
     }
 
     protected virtual async Task<DbResult> UpdateAsync<TUpdateModel>(FilterDefinition<TEntity> filter,
-        TUpdateModel payload, bool updateMany) where TUpdateModel : IUpdateModel
+        TUpdateModel payload, bool updateMany, CancellationToken cancellationToken = default)
+        where TUpdateModel : IUpdateModel
     {
-        return await UpdateAsync(null, filter, payload, updateMany);
+        return await UpdateAsync(null, filter, payload, updateMany, cancellationToken);
     }
 
     protected virtual async Task<DbResult> UpdateAsync<TUpdateModel>(IClientSessionHandle? session,
         FilterDefinition<TEntity> filter,
         TUpdateModel payload,
-        bool updateMany) where TUpdateModel : IUpdateModel
+        bool updateMany, CancellationToken cancellationToken = default) where TUpdateModel : IUpdateModel
     {
         var update = GenerateUpdateDefinition(payload);
-        return await UpdateAsync(session, filter, update, updateMany);
+        return await UpdateAsync(session, filter, update, updateMany, cancellationToken);
     }
 
     protected virtual async Task<DbResult> UpdateAsync(FilterDefinition<TEntity> filter,
-        UpdateDefinition<TEntity>? update, bool updateMany)
+        UpdateDefinition<TEntity>? update, bool updateMany, CancellationToken cancellationToken = default)
     {
-        return await UpdateAsync(null, filter, update, updateMany);
+        return await UpdateAsync(null, filter, update, updateMany, cancellationToken);
     }
 
     protected virtual async Task<DbResult> UpdateAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        UpdateDefinition<TEntity>? update, bool updateMany)
+        UpdateDefinition<TEntity>? update, bool updateMany, CancellationToken cancellationToken = default)
     {
         return updateMany
-            ? await UpdateManyImplAsync(session, filter, update)
-            : await UpdateOneImplAsync(session, filter, update);
+            ? await UpdateManyImplAsync(session, filter, update, cancellationToken)
+            : await UpdateOneImplAsync(session, filter, update, cancellationToken);
     }
 
     /// <summary>
@@ -632,9 +687,9 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         var updates = new List<UpdateDefinition<TEntity>>();
         var modelType = typeof(TEntity);
 
-        var properties = payload?.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance) ?? new PropertyInfo[] {};
+        var properties = payload?.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance) ?? [];
 
-        // Skip Updates on Id, UpdatedAt, CreatedAt, and DeletedAt fields 
+        // Skip Updates on Id, UpdatedAt, CreatedAt, and DeletedAt fields
         var fieldsToSkip = GetReadonlyFields();
         var createdAtUpdated = false;
 
@@ -734,24 +789,25 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
     #region Private methods
 
     private Task<IListViewModel<TEntity>> FindAsyncImpl(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        int offset, int limit, string? orderBy)
+        int offset, int limit, string? orderBy, CancellationToken cancellationToken = default)
     {
         var sortDef = SortDefinitionHelper.GetSortDefinition<TEntity>(orderBy);
-        return FindAsyncImpl(session, filter, offset, limit, sortDef);
+        return FindAsyncImpl(session, filter, offset, limit, sortDef, cancellationToken);
     }
 
     private async Task<IListViewModel<TEntity>> FindAsyncImpl(IClientSessionHandle? session,
-        FilterDefinition<TEntity> filter, int offset, int limit, SortDefinition<TEntity>? sort)
+        FilterDefinition<TEntity> filter, int offset, int limit, SortDefinition<TEntity>? sort,
+        CancellationToken cancellationToken = default)
     {
         var opts = new FindOptions<TEntity> { Skip  = offset, Limit = limit };
         // Apply sorting
         if (sort != null) opts.Sort = sort;
 
-        return await FindAsyncImpl(session, filter, opts);
+        return await FindAsyncImpl(session, filter, opts, cancellationToken);
     }
 
     private async Task<IListViewModel<TEntity>> FindAsyncImpl(IClientSessionHandle? session,
-        FilterDefinition<TEntity> filter, FindOptions<TEntity> opts)
+        FilterDefinition<TEntity> filter, FindOptions<TEntity> opts, CancellationToken cancellationToken = default)
     {
         if (SupportsSoftDelete)
         {
@@ -770,8 +826,8 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
         }
 
         var pageTask = session != null
-            ? Collection.FindAsync(session, filter, opts)
-            : Collection.FindAsync(filter, opts);
+            ? Collection.FindAsync(session, filter, opts, cancellationToken)
+            : Collection.FindAsync(filter, opts, cancellationToken);
 
         var tasks = new List<Task<IAsyncCursor<TEntity>>> { pageTask };
 
@@ -782,8 +838,8 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
             if (opts.Sort != null) nextPageOpts.Sort = opts.Sort;
 
             var nextPageTask = session != null
-                ? Collection.FindAsync(session, filter, nextPageOpts)
-                : Collection.FindAsync(filter, nextPageOpts);
+                ? Collection.FindAsync(session, filter, nextPageOpts, cancellationToken)
+                : Collection.FindAsync(filter, nextPageOpts, cancellationToken);
 
             tasks.Add(nextPageTask);
         }
@@ -792,25 +848,25 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
 
         var result = new ListViewModel<TEntity>
         {
-            Documents = await pageTask.Result.ToListAsync(),
+            Documents = await pageTask.Result.ToListAsync(cancellationToken),
             Offset = offset,
             Limit = opts.Limit ?? 0, // It should not be ZERO
-            HasNextPage = tasks.Count > 1 && await tasks[1].Result.AnyAsync()
+            HasNextPage = tasks.Count > 1 && await tasks[1].Result.AnyAsync(cancellationToken)
         };
 
         return result;
     }
 
     private async Task<DbResult> UpdateOneImplAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        UpdateDefinition<TEntity>? update)
+        UpdateDefinition<TEntity>? update, CancellationToken cancellationToken = default)
     {
         try
         {
             if (update is null) throw new ArgumentNullException(nameof(update));
 
             var result = session != null
-                ? await Collection.UpdateOneAsync(session, filter, update)
-                : await Collection.UpdateOneAsync(filter, update);
+                ? await Collection.UpdateOneAsync(session, filter, update, cancellationToken: cancellationToken)
+                : await Collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
 
             return new DbResult(result);
         }
@@ -822,15 +878,15 @@ public abstract class BaseRepository<TEntity> : BaseRepositoryInternal<TEntity>,
     }
 
     private async Task<DbResult> UpdateManyImplAsync(IClientSessionHandle? session, FilterDefinition<TEntity> filter,
-        UpdateDefinition<TEntity>? update)
+        UpdateDefinition<TEntity>? update, CancellationToken cancellationToken = default)
     {
         try
         {
             if (update is null) throw new ArgumentNullException(nameof(update));
 
             var result = session != null
-                ? await Collection.UpdateManyAsync(session, filter, update)
-                : await Collection.UpdateManyAsync(filter, update);
+                ? await Collection.UpdateManyAsync(session, filter, update, cancellationToken: cancellationToken)
+                : await Collection.UpdateManyAsync(filter, update, cancellationToken: cancellationToken);
 
             return new DbResult(result);
         }

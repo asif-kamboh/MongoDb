@@ -23,10 +23,11 @@ public class MongoDbContext : IMongoDbContext
         DatabaseName = databaseName;
     }
 
-    public async Task<bool> IsReplicaSetAsync()
+    public async Task<bool> IsReplicaSetAsync(CancellationToken cancellationToken)
     {
         var isMasterCommand = new BsonDocument { { "isMaster", 1 } };
-        var result = await _client.GetDatabase("admin").RunCommandAsync<BsonDocument>(isMasterCommand);
+        var result = await _client.GetDatabase("admin")
+            .RunCommandAsync<BsonDocument>(isMasterCommand, cancellationToken: cancellationToken);
         return result.Contains("setName");
     }
 

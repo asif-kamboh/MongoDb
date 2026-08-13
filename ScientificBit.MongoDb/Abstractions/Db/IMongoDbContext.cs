@@ -15,8 +15,9 @@ public interface IMongoDbContext
     /// <summary>
     /// Check if the MongoDB server is a replica set
     /// </summary>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<bool> IsReplicaSetAsync();
+    Task<bool> IsReplicaSetAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Starts a MongoDB session

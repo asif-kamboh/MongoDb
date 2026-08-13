@@ -35,7 +35,16 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
         }
     }
 
-    internal async Task<long> GetNextSequenceId(string sequenceName, long startValue)
+    /// <summary>
+    /// Generates the next sequence ID for the given sequence name.
+    /// </summary>
+    /// <param name="sequenceName"></param>
+    /// <param name="startValue"></param>
+    /// <param name="externalSession">If an external session is given, the owner is responsible for closing it</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    internal async Task<long> GetNextSequenceId(string sequenceName, long startValue,
+        IClientSessionHandle? externalSession, CancellationToken cancellationToken = default)
     {
         if (startValue < 0) startValue = 0;
 
@@ -47,28 +56,29 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
         };
 
         var collection = _dbContext.GetCollection<AutoIncSequence>("auto_inc_sequences_internal");
-        var session = await StartTransactionAsync();
+        var session = externalSession ?? await StartTransactionAsync(cancellationToken);
         try
         {
-            var sequence = await collection.FindOneAndUpdateAsync(session, filter, update, opts);
+            var sequence = await collection.FindOneAndUpdateAsync(session, filter, update, opts, cancellationToken);
             if (sequence is null)
             {
-                // Create new sequence. It may cause sync issues though
+                // Create a new sequence. It may cause sync issues though
                 sequence = new AutoIncSequence
                 {
                     Name = sequenceName,
                     Value = startValue + 1
                 };
-                await collection.InsertOneAsync(session, sequence);
+                await collection.InsertOneAsync(session, sequence, cancellationToken: cancellationToken);
             }
 
-            await session.CommitTransactionAsync();
+            if (externalSession is null) await session.CommitTransactionAsync(cancellationToken);
 
             return sequence.Value;
         }
         catch (Exception ex)
         {
-            await session.AbortTransactionAsync();
+            if (externalSession is null) await session.AbortTransactionAsync(cancellationToken);
+
             _logger?.LogError(ex,
                 "Failed to get next sequence ID. SequenceName={SequenceName}, StartValue={StartValue}, Error={Message}",
                 sequenceName, startValue, ex.Message);
@@ -76,14 +86,14 @@ public abstract class BaseRepositoryInternal<TEntity> where TEntity : BaseEntity
         }
     }
 
-    protected async Task<IClientSessionHandle> StartTransactionAsync()
+    protected async Task<IClientSessionHandle> StartTransactionAsync(CancellationToken cancellationToken = default)
     {
 #pragma warning disable CS0618 // Type or member is obsolete
         var session = _dbContext.StartSession();
 #pragma warning restore CS0618 // Type or member is obsolete
         try
         {
-            var transactionOpts = await _dbContext.IsReplicaSetAsync()
+            var transactionOpts = await _dbContext.IsReplicaSetAsync(cancellationToken)
                 ? new TransactionOptions(readPreference: ReadPreference.Primary)
                 : null;
             session.StartTransaction(transactionOpts);

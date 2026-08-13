@@ -4,7 +4,7 @@ Developers can easily define CRUD operations on a Collection by just
 deriving their collection-wise repository classes from `BaseRepository` class.
 
 # Release Notes
-## v3.1.0 (Release Date: 2026-08-13)
+## v3.1.1 (Release Date: 2026-08-13)
 * Added `CancellationToken` parameter support on all async methods
 
 # Release Notes
